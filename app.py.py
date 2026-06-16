@@ -71,42 +71,74 @@ with st.sidebar:
 # ----------------------------
 # DATA FETCHING
 # ----------------------------
-try:
-    ticker = yf.Ticker(ticker_symbol)
-    S = ticker.info.get('regularMarketPrice', None)
-    data = ticker.history(period="1d", interval="1m")
-    current_price = data['Close'].iloc[-1]  # This should already be a float
-    
-    previous_day_data = yf.download(ticker_symbol, period="2d")
 
-    previous_close = float(previous_day_data['Close'].iloc[-2])
+# 1. Define the cached functions first so Streamlit can use them
+@st.cache_data(ttl=120)
+def get_stock_data(ticker_symbol):
+    import yfinance as yf  # Safe import inside the cached function
+    ticker = yf.Ticker(ticker_symbol)
+    
+    # Fetch price history instead of using ticker.info (avoids 429 errors)
+    data = ticker.history(period="1d", interval="1m")
+    if data.empty:
+        return None, None, None, None
+        
+    current_price = float(data['Close'].iloc[-1])
+    
+    previous_day_data = yf.download(ticker_symbol, period="2d", progress=False)
+    if len(previous_day_data) >= 2:
+        previous_close = float(previous_day_data['Close'].iloc[-2])
+    else:
+        previous_close = current_price
+        
+    expirations = ticker.options
+    return current_price, previous_close, expirations, ticker
+
+@st.cache_data(ttl=120)
+def get_options_chain(ticker_obj, expiration_date_str):
+    opt_chain = ticker_obj.option_chain(expiration_date_str)
+    return opt_chain.calls, opt_chain.puts
+
+
+# 2. Run the data fetching inside your existing try/except block
+try:
+    # Call the cached function
+    current_price, previous_close, expirations, ticker = get_stock_data(ticker_symbol)
+    
+    if current_price is None:
+        st.error("⚠️ Could not fetch live price for this ticker.")
+        st.stop()
+
+    # Set S to current_price to keep the rest of your math working seamlessly
+    S = current_price 
+
     percentage_change = float((current_price - previous_close) / previous_close * 100)
     formatted_change = f"{percentage_change:.2f}%"
 
-    if S is None:
-        st.error("\u26a0\ufe0f Could not fetch live price for this ticker.")
-        st.stop()
-
-    expirations = ticker.options
     if not expirations:
-        st.error("\u26a0\ufe0f No options data found for this ticker.")
+        st.error("⚠️ No options data found for this ticker.")
         st.stop()
 
     target_expiration_date = datetime.today().date() + timedelta(days=days_to_expiration)
     expiration_dates = [datetime.strptime(date, "%Y-%m-%d").date() for date in expirations]
     future_expirations = [d for d in expiration_dates if d >= datetime.today().date()]
     if not future_expirations:
-        st.error("\u26a0\ufe0f No future expiration dates available.")
+        st.error("⚠️ No future expiration dates available.")
         st.stop()
 
     closest_expiration = min(future_expirations, key=lambda d: abs(d - target_expiration_date))
     actual_days_to_expiration = (closest_expiration - datetime.today().date()).days
     expiration_date_str = closest_expiration.strftime("%Y-%m-%d")
 
-    # Pull option chain for selected ticker
-    opt_chain = ticker.option_chain(expiration_date_str)
-    calls = opt_chain.calls
-    puts = opt_chain.puts
+    # Call the cached options function
+    calls, puts = get_options_chain(ticker, expiration_date_str)
+
+    # ----------------------------
+    # THE REST OF YOUR CODE CONTINUES HERE UNCHANGED
+    # ----------------------------
+    # Choose custom or calculated strikes
+    if use_custom_strikes:
+
 
     # Choose custom or calculated strikes
     if use_custom_strikes:
