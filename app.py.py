@@ -75,19 +75,21 @@ with st.sidebar:
 # 1. Define the cached functions first so Streamlit can use them
 @st.cache_data(ttl=120)
 def get_stock_data(ticker_symbol):
-    import yfinance as yf  # Safe import inside the cached function
+    import yfinance as yf
     ticker = yf.Ticker(ticker_symbol)
     
-    # Fetch price history instead of using ticker.info (avoids 429 errors)
-    data = ticker.history(period="1d", interval="1m")
-    if data.empty:
+    # 1. Fetch 3 days of daily data instead of 1-minute data. 
+    # This guarantees we get the latest close and the previous close, even on weekends.
+    history_daily = ticker.history(period="3d")
+    if history_daily.empty or len(history_daily) < 1:
         return None, None, None, None
         
-    current_price = float(data['Close'].iloc[-1])
+    # Current price is just the last available close
+    current_price = float(history_daily['Close'].iloc[-1])
     
-    previous_day_data = yf.download(ticker_symbol, period="2d", progress=False)
-    if len(previous_day_data) >= 2:
-        previous_close = float(previous_day_data['Close'].iloc[-2])
+    # Get previous close safely
+    if len(history_daily) >= 2:
+        previous_close = float(history_daily['Close'].iloc[-2])
     else:
         previous_close = current_price
         
