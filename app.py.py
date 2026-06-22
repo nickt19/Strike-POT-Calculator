@@ -53,7 +53,7 @@ st.sidebar.write("Change inputs and the calculator updates instantly.")
 # DATA FETCHING & LOGIC
 # ----------------------------
 try:
-    ticker = yf.Ticker(ticker_symbol);
+    ticker = yf.Ticker(ticker_symbol)
 
     # Try fetching via fast_info first for better reliability, fall back to info
     try:
@@ -105,7 +105,7 @@ try:
     # Expected Move Header Metrics
     col1, col2, col3 = st.columns(3)
     col1.metric("Underlying Price", f"${S:,.2f}")
-    col2.metric(f"Expected Move (+/-)", f"${expected_move:.2f}")
+    col2.metric("Expected Move (+/-)", f"${expected_move:.2f}")
     col3.metric("Expected Range", f"${S - expected_move:.2f} - ${S + expected_move:.2f}")
 
     st.write(f"**Expiration Cycle:** {expiration_date} ({days_to_expiration} DTE)")
