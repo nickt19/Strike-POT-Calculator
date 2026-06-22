@@ -102,11 +102,15 @@ try:
     # DISPLAY RESULTS
     # ----------------------------
 
-    # Expected Move Header Metrics
+    # Clean layout fix bypassing the st.metric bug
+    st.markdown("### **Current Market Metrics**")
     col1, col2, col3 = st.columns(3)
-    col1.metric("Underlying Price", f"${S:,.2f}")
-    col2.metric("Expected Move (+/-)", f"${expected_move:.2f}")
-    col3.metric("Expected Range", f"${S - expected_move:.2f} - ${S + expected_move:.2f}")
+    with col1:
+        st.markdown(f"**Underlying Price**\n### ${S:,.2f}")
+    with col2:
+        st.markdown(f"**Expected Move (+/-)**\n### ${expected_move:.2f}")
+    with col3:
+        st.markdown(f"**Expected Range**\n### ${S - expected_move:.2f} - ${S + expected_move:.2f}")
 
     st.write(f"**Expiration Cycle:** {expiration_date} ({days_to_expiration} DTE)")
     st.markdown("---")
