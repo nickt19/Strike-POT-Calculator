@@ -61,7 +61,7 @@ st.markdown("Estimates the expected move and probability that your strikes will 
 
 # Sidebar Inputs
 st.sidebar.header("Settings")
-ticker_symbol = st.sidebar.text_input("Ticker Symbol", "^NDX")
+ticker_symbol = st.sidebar.text_input("Ticker Symbol", "^SPX")
 
 # Strategy Selector
 strategy = st.sidebar.selectbox(
