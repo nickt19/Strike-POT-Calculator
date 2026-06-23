@@ -134,12 +134,16 @@ try:
     st.write(f"**Expiration Cycle:** {expiration_date} ({days_to_expiration} DTE)")
     st.markdown("---")
 
-    # Display based on selected strategy
+   # Display based on selected strategy
     st.subheader(f"Strategy Setup: {strategy}")
 
     if strategy == "Iron Condor":
-        st.write(f"**Short Put Strike:** {put_strike}  | IV: {put_iv:.2%}")
-        st.write(f"**Short Call Strike:** {call_strike}  | IV: {call_iv:.2%}")
+        # Pull delta directly from your existing Black-Scholes function
+        put_delta = black_scholes_delta(S, put_strike, T, risk_free_rate, put_iv, 'put')
+        call_delta = black_scholes_delta(S, call_strike, T, risk_free_rate, call_iv, 'call')
+
+        st.write(f"**Short Put Strike:** {put_strike}  |  IV: {put_iv:.2%}  |  **Delta:** {put_delta:.2f}")
+        st.write(f"**Short Call Strike:** {call_strike}  |  IV: {call_iv:.2%}  |  **Delta:** {call_delta:.2f}")
 
         # Combined probabilities for Iron Condor
         prob_either_touch = call_pot + put_pot - (call_pot * put_pot)
@@ -151,7 +155,9 @@ try:
         st.success(f"🦅 **Probability Neither Strike Touches (Max Profit):** {prob_neither_touch:.1%}")
 
     elif strategy == "Put Spread":
-        st.write(f"**Short Put Strike:** {put_strike}  | IV: {put_iv:.2%}")
+        put_delta = black_scholes_delta(S, put_strike, T, risk_free_rate, put_iv, 'put')
+        
+        st.write(f"**Short Put Strike:** {put_strike}  |  IV: {put_iv:.2%}  |  **Delta:** {put_delta:.2f}")
         prob_no_touch = 1 - put_pot
 
         st.markdown("##### Probabilities")
@@ -159,7 +165,9 @@ try:
         st.success(f"🟢 **Probability Put Leg is Safe:** {prob_no_touch:.1%}")
 
     elif strategy == "Call Spread":
-        st.write(f"**Short Call Strike:** {call_strike}  | IV: {call_iv:.2%}")
+        call_delta = black_scholes_delta(S, call_strike, T, risk_free_rate, call_iv, 'call')
+        
+        st.write(f"**Short Call Strike:** {call_strike}  |  IV: {call_iv:.2%}  |  **Delta:** {call_delta:.2f}")
         prob_no_touch = 1 - call_pot
 
         st.markdown("##### Probabilities")
