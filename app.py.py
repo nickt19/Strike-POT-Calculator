@@ -42,7 +42,7 @@ strategy = st.sidebar.selectbox(
     ["Iron Condor", "Put Spread", "Call Spread"]
 )
 
-pct_OTM_input = st.sidebar.number_input("Target OTM % (Express as whole number, e.g. 1.50 for 1.5%)", value=2.00, step=0.50, format="%.2f")
+pct_OTM_input = st.sidebar.number_input("Target OTM % (Enter as whole number, e.g. 1.50 for 1.5%)", value=2.00, step=0.25, format="%.2f")
 pct_OTM = pct_OTM_input / 100.0
 days_to_expiration = st.sidebar.number_input("Days to Expiration", value=2, step=1)
 risk_free_rate = st.sidebar.number_input("Risk-Free Rate (decimal)", value=0.05, step=0.01)
