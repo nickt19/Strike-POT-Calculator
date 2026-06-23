@@ -93,10 +93,27 @@ try:
     call_iv = calls.loc[calls['strike'] == call_strike, 'impliedVolatility'].iloc[0]
     call_pot = pot_from_delta(S, call_strike, T, risk_free_rate, call_iv, 'call')
 
-    # 2. Expected Move Calculation
-    # Using the average IV of our chosen strikes for the cycle benchmark
-    avg_iv = (put_iv + call_iv) / 2
-    expected_move = calculate_expected_move(S, avg_iv, T)
+    # 2. Marketwide Benchmark Expected Move Calculation (ATM)
+    # Find the call contract closest to the current spot price
+    atm_idx = (calls['strike'] - S).abs().idxmin()
+    atm_iv = calls.loc[atm_idx, 'impliedVolatility']
+    
+    # Calculate expected move using the ATM benchmark IV
+    expected_move = calculate_expected_move(S, atm_iv, T)
+
+    # ----------------------------
+    # DISPLAY RESULTS
+    # ----------------------------
+
+    # Clean layout fix bypassing the st.metric bug
+    st.markdown("### **Current Market Metrics**")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"**Underlying Price**\n### ${S:,.2f}")
+    with col2:
+        st.markdown(f"**Expected Move (+/-)**\n### ${expected_move:.2f}")
+    with col3:
+        st.markdown(f"**Expected Range**\n### ${S - expected_move:.2f} - ${S + expected_move:.2f}")
 
     # ----------------------------
     # DISPLAY RESULTS
