@@ -120,15 +120,17 @@ try:
     # DISPLAY RESULTS
     # ----------------------------
 
-    # Clean layout fix bypassing the st.metric bug
+    # Clean layout fix bypassing the st.metric bug and formatting issues
     st.markdown("### **Current Market Metrics**")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown(f"**Underlying Price**\n### ${S:,.2f}")
+        st.markdown(f"**Underlying Price**\n\n${S:,.2f}")
     with col2:
-        st.markdown(f"**Expected Move (+/-)**\n### ${expected_move:.2f}")
+        st.markdown(f"**Expected Move (+/-)**\n\n${expected_move:.2f}")
     with col3:
-        st.markdown(f"**Expected Range**\n### ${S - expected_move:.2f} - ${S + expected_move:.2f}")
+        # Combined into a single line string to force proper browser rendering
+        expected_range_str = f"${S - expected_move:,.2f} to ${S + expected_move:,.2f}"
+        st.markdown(f"**Expected Range**\n\n{expected_range_str}")
 
     st.write(f"**Expiration Cycle:** {expiration_date} ({days_to_expiration} DTE)")
     st.markdown("---")
