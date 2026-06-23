@@ -26,6 +26,33 @@ def calculate_expected_move(S, iv, T):
     return S * iv * np.sqrt(T)
 
 # ----------------------------
+# CACHED DATA FETCHING
+# ----------------------------
+@st.cache_data(ttl=300)  # Saves data locally for 5 minutes to prevent API rate limiting
+def get_options_data(ticker_symbol):
+    ticker = yf.Ticker(ticker_symbol)
+
+    # Try fetching via fast_info first for better reliability, fall back to info
+    try:
+        S = ticker.fast_info['lastPrice']
+    except:
+        S = ticker.info.get('regularMarketPrice', None)
+
+    if S is None:
+        return None, None, None, None
+
+    # Find the next available expiration date
+    expirations = ticker.options
+    if not expirations:
+        return S, None, None, None
+
+    expiration_date = expirations[0]
+
+    # Pull the option chain for that date
+    opt_chain = ticker.option_chain(expiration_date)
+    return S, expiration_date, opt_chain.calls, opt_chain.puts
+
+# ----------------------------
 # STREAMLIT UI
 # ----------------------------
 
@@ -51,33 +78,19 @@ st.sidebar.markdown("---")
 st.sidebar.write("Change inputs and the calculator updates instantly.")
 
 # ----------------------------
-# DATA FETCHING & LOGIC
+# MAIN EXECUTION LOGIC
 # ----------------------------
 try:
-    ticker = yf.Ticker(ticker_symbol)
-
-    # Try fetching via fast_info first for better reliability, fall back to info
-    try:
-        S = ticker.fast_info['lastPrice']
-    except:
-        S = ticker.info.get('regularMarketPrice', None)
+    # Use cached data fetch function
+    S, expiration_date, calls, puts = get_options_data(ticker_symbol)
 
     if S is None:
         st.error("⚠️ Could not fetch live price for this ticker.")
         st.stop()
 
-    # Find the next available expiration date
-    expirations = ticker.options
-    if not expirations:
+    if expiration_date is None:
         st.error("⚠️ No options data found for this ticker.")
         st.stop()
-
-    expiration_date = expirations[0]
-
-    # Pull the option chain for that date
-    opt_chain = ticker.option_chain(expiration_date)
-    calls = opt_chain.calls
-    puts = opt_chain.puts
 
     T = days_to_expiration / 365.0
 
