@@ -106,20 +106,6 @@ try:
     # DISPLAY RESULTS
     # ----------------------------
 
-    # Clean layout fix bypassing the st.metric bug
-    st.markdown("### **Current Market Metrics**")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown(f"**Underlying Price**\n### ${S:,.2f}")
-    with col2:
-        st.markdown(f"**Expected Move (+/-)**\n### ${expected_move:.2f}")
-    with col3:
-        st.markdown(f"**Expected Range**\n### ${S - expected_move:.2f} - ${S + expected_move:.2f}")
-
-    # ----------------------------
-    # DISPLAY RESULTS
-    # ----------------------------
-
     # Clean layout fix bypassing the st.metric bug and formatting issues
     st.markdown("### **Current Market Metrics**")
     col1, col2, col3 = st.columns(3)
