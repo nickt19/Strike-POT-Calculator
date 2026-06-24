@@ -28,11 +28,12 @@ def calculate_expected_move(S, iv, T):
 # ----------------------------
 # CACHED DATA FETCHING
 # ----------------------------
-@st.cache_data(ttl=300)  # Saves data locally for 5 minutes to prevent API rate limiting
-def get_options_data(ticker_symbol):
+import datetime
+
+@st.cache_data(ttl=300)
+def get_options_data(ticker_symbol, target_dte):
     ticker = yf.Ticker(ticker_symbol)
 
-    # Try fetching via fast_info first for better reliability, fall back to info
     try:
         S = ticker.fast_info['lastPrice']
     except:
@@ -41,14 +42,18 @@ def get_options_data(ticker_symbol):
     if S is None:
         return None, None, None, None
 
-    # Find the next available expiration date
     expirations = ticker.options
     if not expirations:
         return S, None, None, None
 
-    expiration_date = expirations[0]
+    # Calculate target date based on DTE input
+    target_date = datetime.date.today() + datetime.timedelta(days=target_dte)
+    target_str = target_date.strftime("%Y-%m-%d")
 
-    # Pull the option chain for that date
+    # Find the available expiration closest to our target DTE date
+    expiration_date = min(expirations, key=lambda x: abs((datetime.datetime.strptime(x, "%Y-%m-%d").date() - target_date).days))
+
+    # Pull the option chain for that dynamically selected date
     opt_chain = ticker.option_chain(expiration_date)
     return S, expiration_date, opt_chain.calls, opt_chain.puts
 
@@ -80,9 +85,10 @@ st.sidebar.write("Change inputs and the calculator updates instantly.")
 # ----------------------------
 # MAIN EXECUTION LOGIC
 # ----------------------------
+
 try:
-    # Use cached data fetch function
-    S, expiration_date, calls, puts = get_options_data(ticker_symbol)
+    # Pass days_to_expiration into the cached function
+    S, expiration_date, calls, puts = get_options_data(ticker_symbol, days_to_expiration)
 
     if S is None:
         st.error("⚠️ Could not fetch live price for this ticker.")
