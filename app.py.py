@@ -99,35 +99,48 @@ try:
         st.stop()
 
     T = days_to_expiration / 365.0
+# Fetch a fallback IV depending on your DTE
+    try:
+        # Use 9-day volatility for shorter term trades
+        if days_to_expiration <= 14:
+            fallback_iv = yf.Ticker("^VIX9D").fast_info['lastPrice'] / 100.0
+        else:
+            fallback_iv = yf.Ticker("^VIX").fast_info['lastPrice'] / 100.0
+    except:
+        fallback_iv = 0.15 # Hard fallback just in case yfinance is totally down
 
-    # 1. Target Strikes & IV Fetching
     # --- Put Leg ---
     put_target = round(S * (1 - pct_OTM) / 10) * 10
     put_strike = puts['strike'].iloc[(puts['strike'] - put_target).abs().argsort()[0]]
     put_iv = puts.loc[puts['strike'] == put_strike, 'impliedVolatility'].iloc[0]
+    
+    # Apply fallback if Yahoo gives us junk
+    if put_iv < 0.01: 
+        put_iv = fallback_iv
+        
     put_pot = pot_from_delta(S, put_strike, T, risk_free_rate, put_iv, 'put')
 
     # --- Call Leg ---
     call_target = round(S * (1 + pct_OTM) / 10) * 10
     call_strike = calls['strike'].iloc[(calls['strike'] - call_target).abs().argsort()[0]]
     call_iv = calls.loc[calls['strike'] == call_strike, 'impliedVolatility'].iloc[0]
+    
+    if call_iv < 0.01: 
+        call_iv = fallback_iv
+        
     call_pot = pot_from_delta(S, call_strike, T, risk_free_rate, call_iv, 'call')
 
-    # 2. Marketwide Benchmark Expected Move Calculation (ATM)
-    # Find the call contract closest to the current spot price
+    # --- ATM Benchmark Expected Move ---
     atm_idx = (calls['strike'] - S).abs().idxmin()
+    atm_iv = calls.at[atm_idx, 'impliedVolatility']
     
-    # FIX: Use .loc and select the first item explicitly to guarantee a single float value
-    atm_iv = calls.loc[atm_idx, 'impliedVolatility']
-    if isinstance(atm_iv, pds := np.ndarray) or hasattr(atm_iv, 'iloc'):
-        atm_iv = atm_iv.iloc[0] if hasattr(atm_iv, 'iloc') else atm_iv[0]
+    if atm_iv < 0.01: 
+        atm_iv = fallback_iv
 
-    # FIX: Floor T at 0.5/365 for 0 DTE options so it doesn't calculate an expected move of $0
+    # Floor T for 0 DTEs so the expected move doesn't multiply by zero
     T_calc = max(T, 0.5 / 365.0)
-    
-    # Calculate expected move using the ATM benchmark IV
     expected_move = calculate_expected_move(S, atm_iv, T_calc)
-   
+    
     # ----------------------------
     # DISPLAY RESULTS
     # ----------------------------
