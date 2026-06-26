@@ -116,11 +116,18 @@ try:
     # 2. Marketwide Benchmark Expected Move Calculation (ATM)
     # Find the call contract closest to the current spot price
     atm_idx = (calls['strike'] - S).abs().idxmin()
+    
+    # FIX: Use .loc and select the first item explicitly to guarantee a single float value
     atm_iv = calls.loc[atm_idx, 'impliedVolatility']
+    if isinstance(atm_iv, pds := np.ndarray) or hasattr(atm_iv, 'iloc'):
+        atm_iv = atm_iv.iloc[0] if hasattr(atm_iv, 'iloc') else atm_iv[0]
+
+    # FIX: Floor T at 0.5/365 for 0 DTE options so it doesn't calculate an expected move of $0
+    T_calc = max(T, 0.5 / 365.0)
     
     # Calculate expected move using the ATM benchmark IV
-    expected_move = calculate_expected_move(S, atm_iv, T)
-
+    expected_move = calculate_expected_move(S, atm_iv, T_calc)
+   
     # ----------------------------
     # DISPLAY RESULTS
     # ----------------------------
